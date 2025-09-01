@@ -1,54 +1,34 @@
+import java.util.PriorityQueue;
+
 class Solution {
     public double maxAverageRatio(int[][] classes, int extraStudents) {
-        PriorityQueue<ClassRecord> pq = new PriorityQueue<>(new Compare());
-        
-        for(int[] cl : classes)
-            pq.add(new ClassRecord(cl));
-        
-        ClassRecord cl;
-        while(extraStudents-- > 0)
-            pq.add(pq.remove().addOneStudent());
-        
-        double sum = 0;
-        while(!pq.isEmpty()){
-            cl = pq.remove();
-            sum += (double)cl.pass / cl.total;
+        // PriorityQueue stores {gain, index}, sorted by gain descending
+        PriorityQueue<double[]> pq = new PriorityQueue<>((a, b) -> Double.compare(b[0], a[0]));
+
+        // Push initial marginal gain for each class
+        for (int i = 0; i < classes.length; i++) {
+            double curr = (double) classes[i][0] / classes[i][1];
+            double newPr = (double) (classes[i][0] + 1) / (classes[i][1] + 1);
+            pq.offer(new double[]{newPr - curr, i});
         }
 
-        return sum / classes.length;
-    }
-}
+        // Distribute extra students
+        while (extraStudents-- > 0) {
+            double[] top = pq.poll();
+            int i = (int) top[1];
+            classes[i][0] += 1;
+            classes[i][1] += 1;
+            double curr = (double) classes[i][0] / classes[i][1];
+            double newPr = (double) (classes[i][0] + 1) / (classes[i][1] + 1);
+            pq.offer(new double[]{newPr - curr, i});
+        }
 
-class ClassRecord{
-    int pass;
-    int total;
-    double inc;
+        // Compute final average pass ratio
+        double ans = 0.0;
+        for (int[] c : classes) {
+            ans += (double) c[0] / c[1];
+        }
 
-    public ClassRecord(int[] array){
-        pass = array[0];
-        total = array[1];
-        inc = getIncrement();
-    }
-
-    public ClassRecord addOneStudent(){
-        pass++;
-        total++;
-        inc = getIncrement();
-        return this;
-    }
-
-    private double getIncrement(){
-        return (pass + 1.0) / (total + 1) - (double)pass / total;
-    }
-}
-
-class Compare implements Comparator<ClassRecord>{
-    public int compare(ClassRecord a, ClassRecord b){
-        if(a.inc < b.inc)
-            return 1;
-        else if(a.inc > b.inc)
-            return -1;
-        else
-            return 0;
+        return ans / classes.length;
     }
 }
